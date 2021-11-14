@@ -1,24 +1,33 @@
-// background.js
-
-let color = '#3aa757';
-
 chrome.runtime.onInstalled.addListener(async () => {
-  chrome.storage.sync.set({ color });
-  console.log('Default background color set to %cgreen', `color: ${color}`);
-  console.log('storage',  chrome.desktopCapture);
   console.log('dev',  chrome);
-  chrome.storage.sync.get('color', function(result) {
-    console.log('sync', result)
-  });
-  chrome.storage.local.get(['myCat'], function(result) {
-    console.log('local', result)
-  });
+  chrome.storage.sync.set({token: ''});
 });
 
 
-// Reads all data out of storage.sync and exposes it via a promise.
-//
-// Note: Once the Storage API gains promise support, this function
-// can be greatly simplified.
+chrome.webRequest.onBeforeSendHeaders.addListener(
+	async function (details) {
+      for (var i = 0; i < details.requestHeaders.length; ++i) {
+        if (details.requestHeaders[i].name === "Authorization") {
+          const token = details.requestHeaders[i].value;
+          chrome.storage.sync.set({token}, function() {
+            console.log('Value is set to ', token);
+          });
+        }
+      }
+      return { requestHeaders: details.requestHeaders };
+	},
+	{ urls: ["*://fleet-api.ifood-devel.com.br/api/*"] },
+	["requestHeaders"]
+);
+
+chrome.storage.onChanged.addListener(addBadge)
+
+async function addBadge(){
+  const {token} = await chrome.storage.sync.get("token")
+  if(token){
+    chrome.action.setBadgeText({ text: '1' });
+  }
+}
+
 
 
